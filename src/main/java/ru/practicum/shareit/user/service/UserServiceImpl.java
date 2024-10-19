@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-public class UserServiceImpl implements UserService{
+public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
 
     @Override
@@ -38,7 +38,7 @@ public class UserServiceImpl implements UserService{
 
 
     @Override
-    public UserDto updateUser (long id, UserDto userDto) {
+    public UserDto updateUser(long id, UserDto userDto) {
         User user = userRepository.findById(id).orElseThrow(() ->
                 new EntityNotFoundException(String.format("Пользователь с идентификатором %s не найден", id)));
         String name = userDto.getName();
