@@ -16,13 +16,13 @@ public class ErrorHandler {
     @ExceptionHandler
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse validationException(final MethodArgumentNotValidException e) {
-        log.info(e.getMessage());
+        log.debug(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     public ResponseEntity<String> validationException(final ConstraintViolationException e) {
-        log.info(e.getMessage());
+        log.debug(e.getMessage());
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
