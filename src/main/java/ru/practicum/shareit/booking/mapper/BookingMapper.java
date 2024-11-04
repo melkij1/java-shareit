@@ -11,7 +11,7 @@ import ru.practicum.shareit.user.mapper.UserMapper;
 
 @UtilityClass
 public class BookingMapper {
-    public BookingDtoOut toBookingDtoOut(Booking booking){
+    public BookingDtoOut toBookingDtoOut(Booking booking) {
         return new BookingDtoOut(
                 booking.getId(),
                 booking.getStart(),
@@ -32,7 +32,7 @@ public class BookingMapper {
         );
     }
 
-    public Booking toBooking(BookingDto bookingDto, Booking booking){
+    public Booking toBooking(BookingDto bookingDto, Booking booking) {
         booking.setStart(bookingDto.getStart());
         booking.setEnd(bookingDto.getEnd());
         booking.setStatus(BookingStatusEnum.WAITING);
