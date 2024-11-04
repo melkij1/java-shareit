@@ -1,0 +1,11 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:13.7-alpine
+    container_name: shareit-db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_DB=shareit
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root

@@ -13,7 +13,9 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class ErrorHandler {
 
-    @ExceptionHandler
+    @ExceptionHandler({MethodArgumentNotValidException.class, ItemIsNotAvailableException.class,
+            WrongDatesException.class, BookingCanBeApprovedOnlyByOwnerException.class,
+            UnsupportedStatusException.class, NotBookerException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse validationException(final MethodArgumentNotValidException e) {
         log.debug(e.getMessage());
@@ -26,7 +28,8 @@ public class ErrorHandler {
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler
+    @ExceptionHandler({EntityNotFoundException.class, IllegalViewAndUpdateException.class,
+            NotAvailableToBookOwnItemsException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse entityNotFoundException(final EntityNotFoundException e) {
         log.info(e.getMessage());

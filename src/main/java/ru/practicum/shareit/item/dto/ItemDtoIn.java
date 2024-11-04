@@ -8,7 +8,7 @@ import ru.practicum.shareit.utils.Create;
 
 @Data
 @Builder
-public class ItemDto {
+public class ItemDtoIn {
     private long id;
     @NotBlank(groups = {Create.class})
     private String name;
