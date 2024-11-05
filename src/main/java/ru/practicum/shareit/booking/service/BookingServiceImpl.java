@@ -1,6 +1,6 @@
 package ru.practicum.shareit.booking.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -73,7 +73,7 @@ public class BookingServiceImpl implements BookingService {
 
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public BookingDtoOut getBookingById(long bookingId, long userId) {
         log.info("Получение бронирования по идентификатору {}", bookingId);
@@ -86,7 +86,7 @@ public class BookingServiceImpl implements BookingService {
         return BookingMapper.toBookingDtoOut(booking);
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public List<BookingDtoOut> getAllByBooker(String state, long bookerId) {
         User booker = getUser(bookerId);
@@ -127,7 +127,7 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream().map(BookingMapper::toBookingDtoOut).collect(Collectors.toList());
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public List<BookingDtoOut> getAllByOwner(long ownerId, String state) {
         User owner = getUser(ownerId);
@@ -169,7 +169,7 @@ public class BookingServiceImpl implements BookingService {
         return bookings.stream().map(BookingMapper::toBookingDtoOut).collect(Collectors.toList());
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     public Booking getById(long bookingId) {
         log.info("Получение бронирования по идентификатору {}", bookingId);
         return bookingRepository.findById(bookingId).orElseThrow(() ->

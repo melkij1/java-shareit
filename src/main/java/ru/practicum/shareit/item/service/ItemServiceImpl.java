@@ -1,6 +1,6 @@
 package ru.practicum.shareit.item.service;
 
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Sort;
@@ -84,7 +84,7 @@ public class ItemServiceImpl implements ItemService {
         return ItemMapper.toDto(item);
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public ItemDtoOut getItemById(long itemId, long userId) {
         log.info("Получение вещи по идентификатору {}", itemId);
@@ -92,7 +92,7 @@ public class ItemServiceImpl implements ItemService {
                 new EntityNotFoundException(String.format("Объект класса %s не найден", Item.class)));
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public List<ItemDtoOut> getItemsByOwner(long userId) {
         log.info("Получение вещи по владельцу {}", userId);
@@ -101,7 +101,7 @@ public class ItemServiceImpl implements ItemService {
         return addBookingsAndCommentsForList(items);
     }
 
-    @Transactional()
+    @Transactional(readOnly = true)
     @Override
     public List<ItemDtoOut> getItemBySearch(String text) {
         log.info("Получение вещи по поиску {}", text);
