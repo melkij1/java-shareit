@@ -4,9 +4,13 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
-import ru.practicum.shareit.item.dto.ItemDto;
+import ru.practicum.shareit.item.comment.dto.CommentDtoIn;
+import ru.practicum.shareit.item.comment.dto.CommentDtoOut;
+import ru.practicum.shareit.item.dto.ItemDtoIn;
+import ru.practicum.shareit.item.dto.ItemDtoOut;
 import ru.practicum.shareit.item.service.ItemService;
 import ru.practicum.shareit.utils.Create;
+import ru.practicum.shareit.utils.Update;
 
 import java.util.List;
 
@@ -17,35 +21,44 @@ import java.util.List;
 public class ItemController {
     private final ItemService itemService;
 
+    @PostMapping
+    public ItemDtoOut saveNewItem(@Validated(Create.class) @RequestBody ItemDtoIn itemDtoIn,
+                                  @RequestHeader("X-Sharer-User-Id") long userId) {
+        log.info("POST / items {} / user {}", itemDtoIn.getName(), userId);
+        return itemService.saveNewItem(itemDtoIn, userId);
+    }
+
+    @PatchMapping("/{itemId}")
+    public ItemDtoOut updateItem(@PathVariable long itemId,
+                                 @Validated(Update.class) @RequestBody ItemDtoIn itemDtoIn,
+                                 @RequestHeader("X-Sharer-User-Id") long userId) {
+        log.info("PATCH / items {} / user {}", itemId, userId);
+        return itemService.updateItem(itemId, itemDtoIn, userId);
+    }
+
     @GetMapping("/{itemId}")
-    public ItemDto getItem(@PathVariable long itemId) {
-        log.info("GET / items / {}", itemId);
-        return itemService.findById(itemId);
+    public ItemDtoOut getItemById(@PathVariable long itemId, @RequestHeader("X-Sharer-User-Id") long userId) {
+        log.info("GET / items {} / user {}", itemId, userId);
+        return itemService.getItemById(itemId, userId);
     }
 
     @GetMapping
-    public List<ItemDto> getItemsByOwnerList(@RequestHeader("X-Sharer-User-Id") long userId) {
-        log.info("GET / items");
+    public List<ItemDtoOut> getItemsByOwner(@RequestHeader("X-Sharer-User-Id") long userId) {
+        log.info("GET / items / user {}", userId);
         return itemService.getItemsByOwner(userId);
     }
 
     @GetMapping("/search")
-    public List<ItemDto> getFilmBySearch(@RequestParam String text) {
+    public List<ItemDtoOut> getFilmBySearch(@RequestParam String text) {
         log.info("GET / search / {}", text);
         return itemService.getItemBySearch(text);
     }
 
-    @PostMapping
-    public ItemDto saveNewItem(@Validated(Create.class) @RequestBody ItemDto itemDto,
-                               @RequestHeader("X-Sharer-User-Id") long userId) {
-        log.info("POST / items / {}", itemDto.getName());
-        return itemService.saveNewItem(itemDto, userId);
-    }
-
-    @PatchMapping("/{itemId}")
-    public ItemDto updateItem(@PathVariable long itemId, @RequestBody ItemDto itemDto,
-                              @RequestHeader("X-Sharer-User-Id") long userId) {
-        log.info("PATCH / items / {}", itemId);
-        return itemService.updateItem(itemId, itemDto, userId);
+    @PostMapping("/{itemId}/comment")
+    public CommentDtoOut addComment(@PathVariable long itemId,
+                                    @Validated(Create.class) @RequestBody CommentDtoIn commentDtoIn,
+                                    @RequestHeader("X-Sharer-User-Id") long userId) {
+        log.info("POST / comment / item {}", itemId);
+        return itemService.saveNewComment(itemId, commentDtoIn, userId);
     }
 }
