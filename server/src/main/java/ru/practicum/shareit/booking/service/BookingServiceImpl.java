@@ -41,7 +41,7 @@ public class BookingServiceImpl implements BookingService {
         if (!item.getAvailable()) {
             throw new ItemIsNotAvailableException("Вещь недоступна для брони");
         }
-        if (userId == item.getOwner().getId()) {
+        if (Long.valueOf(userId).equals(item.getOwner().getId())) {
             throw new NotAvailableToBookOwnItemsException("Функция бронировать собственную вещь отсутствует");
         }
 
