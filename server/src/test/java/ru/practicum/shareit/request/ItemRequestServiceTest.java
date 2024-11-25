@@ -6,6 +6,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Pageable;
 import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
@@ -17,11 +18,11 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -86,5 +87,51 @@ class ItemRequestServiceTest {
         ItemRequestDtoOut actualRequest = requestService.getRequestById(1L, 1L);
 
         Assertions.assertEquals(requestDto, actualRequest);
+    }
+
+    @Test
+    void shouldThrowException_whenUserNotFoundOnSaveRequest() {
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                requestService.saveNewRequest(new ItemRequestDtoIn("description"), 2L));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoRequestsFoundForRequestor() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(requestor));
+        when(requestRepository.findAllByRequestorId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<ItemRequestDtoOut> actualRequests = requestService.getRequestsByRequestor(2L);
+
+        Assertions.assertTrue(actualRequests.isEmpty());
+    }
+
+    @Test
+    void shouldThrowException_whenUserNotFoundOnGetAllRequests() {
+        when(userRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                requestService.getAllRequests(0, 10, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenRequestNotFound() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(requestRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                requestService.getRequestById(1L, 1L));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoRequestsFoundInPagination() {
+        long userId = 1L;
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(requestRepository.findAllByRequestorIdIsNot(eq(userId), any(Pageable.class))).thenReturn(Collections.emptyList());
+
+        List<ItemRequestDtoOut> actualRequests = requestService.getAllRequests(0, 10, userId);
+
+        Assertions.assertTrue(actualRequests.isEmpty(), "Expected an empty list when no requests are found");
     }
 }
