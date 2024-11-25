@@ -56,6 +56,7 @@ class ItemServiceTest {
     private ItemServiceImpl itemService;
 
     private final long id = 1L;
+    private final long notOwnerId = 2L;
     private final User user = new User(id, "User", "user@mail.ru");
     private final User notOwner = new User(2L, "User2", "user2@mail.ru");
     private final ItemDtoIn itemDtoIn = new ItemDtoIn("item", "cool item", true, null);
@@ -264,6 +265,78 @@ class ItemServiceTest {
         Assertions.assertThrows(NotBookerException.class, () ->
                 itemService.saveNewComment(id, new CommentDtoIn(""), id));
     }
+
+    @Test
+    void shouldSaveItemWithRequest_whenUserExistsAndRequestExists() {
+        User user = new User();
+        user.setId(1L);
+        user.setName("Test User");
+        user.setEmail("test@example.com");
+
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(requestRepository.findById(itemRequest.getId())).thenReturn(Optional.of(itemRequest));
+
+        Item item = new Item();
+        item.setId(1L);
+        item.setRequest(itemRequest);
+        item.setOwner(user);
+
+        when(itemRepository.save(any(Item.class))).thenReturn(item);
+
+        itemDtoIn.setRequestId(itemRequest.getId());
+        ItemDtoOut actualItemDto = itemService.saveNewItem(itemDtoIn, id);
+
+        Assertions.assertEquals(ItemMapper.toDto(item), actualItemDto);
+        Assertions.assertNotNull(item.getRequest());
+    }
+
+    @Test
+    void shouldReturnItem_whenUserIsNotOwner() {
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        ItemDtoOut actualItemDto = itemService.getItemById(id, notOwnerId);
+        ItemDtoOut expectedItemDto = ItemMapper.toDto(item);
+        expectedItemDto.setComments(Collections.emptyList());
+
+        Assertions.assertEquals(expectedItemDto, actualItemDto);
+    }
+
+    @Test
+    void shouldReturnItemWithNoComments() {
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(commentRepository.findAllByItemId(id)).thenReturn(Collections.emptyList());
+
+        ItemDtoOut actualItemDto = itemService.getItemById(id, notOwnerId);
+
+        Assertions.assertTrue(actualItemDto.getComments().isEmpty());
+    }
+
+    @Test
+    void shouldUpdateItemAvailability_whenChangingAvailability() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        itemDtoIn.setAvailable(true);
+        ItemDtoOut actualItemDto = itemService.updateItem(id, itemDtoIn, id);
+
+        Assertions.assertTrue(actualItemDto.getAvailable());
+    }
+
+    @Test
+    void shouldReturnItemsFilteredByOwner() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findAllByOwnerId(anyLong(), any())).thenReturn(List.of(item, anotherItem));
+
+        List<ItemDtoOut> targetItems = itemService.getItemsByOwner(0, 10, id);
+
+        Assertions.assertEquals(2, targetItems.size());
+    }
+
+
+
+
+
+
 
 
 

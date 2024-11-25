@@ -70,6 +70,9 @@ public class ItemServiceImpl implements ItemService {
     @Override
     public ItemDtoOut updateItem(long itemId, ItemDtoIn itemDtoIn, long userId) {
         log.info("Обновление вещи {} с идентификатором {}", itemDtoIn.getName(), itemId);
+        if (itemDtoIn.getName() == null || itemDtoIn.getName().isEmpty()) {
+            throw new IllegalArgumentException("Имя вещи не может быть пустым");
+        }
         getUser(userId);
         Item item = itemRepository.findById(itemId).orElseThrow(() ->
                 new EntityNotFoundException(String.format("Объект класса %s не найден", Item.class)));
