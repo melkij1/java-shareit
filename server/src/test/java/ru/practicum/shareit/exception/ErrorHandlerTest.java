@@ -1,16 +1,10 @@
 package ru.practicum.shareit.exception;
 
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.MethodArgumentNotValidException;
-import org.springframework.web.bind.annotation.ExceptionHandler;
-
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
-class ExceptionHandlerTest {
+class ErrorHandlerTest {
 
     private final ErrorHandler exceptionHandler = new ErrorHandler();
 
@@ -19,6 +13,7 @@ class ExceptionHandlerTest {
     void shouldReturnBadRequest_whenItemIsNotAvailableException() {
         ItemIsNotAvailableException exception = new ItemIsNotAvailableException("Item not available");
         ErrorResponse response = exceptionHandler.validateException(exception);
+
         assertEquals("Item not available", response.getError());
     }
 
