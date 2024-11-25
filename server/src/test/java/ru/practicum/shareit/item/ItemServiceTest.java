@@ -25,11 +25,14 @@ import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.item.service.ItemServiceImpl;
+import ru.practicum.shareit.request.ItemRequest;
+import ru.practicum.shareit.request.ItemRequestRepository;
 import ru.practicum.shareit.user.dto.UserDtoShort;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -47,6 +50,8 @@ class ItemServiceTest {
     private BookingRepository bookingRepository;
     @Mock
     private CommentRepository commentRepository;
+    @Mock
+    private ItemRequestRepository requestRepository;
     @InjectMocks
     private ItemServiceImpl itemService;
 
@@ -57,12 +62,13 @@ class ItemServiceTest {
     private final ItemDtoOut itemDtoOut = new ItemDtoOut(id, "item", "cool item", true,
             new UserDtoShort(id, "User"));
     private final Item item = new Item(id, "item", "cool item", true, user, null);
+    private final Item anotherItem = new Item(id, "item2", "cool item", true, user, null);
     private final CommentDtoOut commentDto = new CommentDtoOut(id, "abc", "User",
             LocalDateTime.of(2023, 7, 1, 12, 12, 12));
     private final Comment comment = new Comment(id, "abc", item, user,
             LocalDateTime.of(2023, 7, 1, 12, 12, 12));
     private final Booking booking = new Booking(id, null, null, item, user, BookingStatusEnum.WAITING);
-
+    private final ItemRequest itemRequest = new ItemRequest();
     @Test
     void shouldSaveItem_whenUserExists() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
@@ -188,6 +194,80 @@ class ItemServiceTest {
         Assertions.assertThrows(NotBookerException.class, () ->
                 itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
     }
+
+    @Test
+    void shouldThrowException_whenRequestDoesNotExist() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(requestRepository.findById(itemRequest.getId())).thenReturn(Optional.empty());
+
+        itemDtoIn.setRequestId(itemRequest.getId());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.saveNewItem(itemDtoIn, id));
+    }
+
+
+    @Test
+    void shouldUpdateItemAvailability_whenUserIsTheOwner() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        itemDtoIn.setAvailable(false);
+        ItemDtoOut actualItemDto = itemService.updateItem(id, itemDtoIn, id);
+
+        Assertions.assertFalse(actualItemDto.getAvailable());
+    }
+
+    @Test
+    void shouldNotUpdateItem_whenNameIsBlank() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        itemDtoIn.setName(" ");
+
+        ItemDtoOut actualItemDto = itemService.updateItem(id, itemDtoIn, id);
+
+        Assertions.assertEquals(itemDtoOut, actualItemDto);
+    }
+
+    @Test
+    void shouldThrowException_whenGettingNonexistentItem() {
+        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.getItemById(id, id));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenOwnerHasNoItems() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findAllByOwnerId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<ItemDtoOut> targetItems = itemService.getItemsByOwner(0, 10, id);
+
+        Assertions.assertTrue(targetItems.isEmpty());
+    }
+
+    @Test
+    void shouldReturnMultipleItems_whenSearchTextMatchesMultipleItems() {
+        when(itemRepository.search(any(), any())).thenReturn(List.of(item, anotherItem));
+
+        List<ItemDtoOut> targetItems = itemService.getItemBySearch(0, 10, "abc");
+
+        Assertions.assertEquals(2, targetItems.size());
+    }
+
+    @Test
+    void shouldThrowNotBookerException_whenCommentTextIsEmpty() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(NotBookerException.class, () ->
+                itemService.saveNewComment(id, new CommentDtoIn(""), id));
+    }
+
+
+
+
+
 
 
 
