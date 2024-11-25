@@ -2,7 +2,7 @@ package ru.practicum.shareit.exception;
 
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class ErrorHandlerTest {
 
@@ -65,5 +65,15 @@ class ErrorHandlerTest {
 
         assertEquals("Произошла непредвиденная ошибка.", response.getError());
     }
+
+    @Test
+    void shouldReturnBadRequest_whenItemIsNotAvailableException_withCustomMessage() {
+        ItemIsNotAvailableException exception = new ItemIsNotAvailableException("Custom Item not available message");
+        ErrorResponse response = exceptionHandler.validateException(exception);
+
+        assertEquals("Custom Item not available message", response.getError());
+    }
+
+
 }
 

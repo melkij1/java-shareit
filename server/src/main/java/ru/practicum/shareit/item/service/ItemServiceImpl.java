@@ -73,6 +73,9 @@ public class ItemServiceImpl implements ItemService {
         if (itemDtoIn.getName() == null || itemDtoIn.getName().isEmpty()) {
             throw new IllegalArgumentException("Имя вещи не может быть пустым");
         }
+        if (itemDtoIn.getDescription() == null || itemDtoIn.getDescription().isEmpty()) {
+            throw new IllegalArgumentException("Описание вещи не может быть пустым");
+        }
         getUser(userId);
         Item item = itemRepository.findById(itemId).orElseThrow(() ->
                 new EntityNotFoundException(String.format("Объект класса %s не найден", Item.class)));

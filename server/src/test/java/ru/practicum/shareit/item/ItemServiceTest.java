@@ -332,17 +332,149 @@ class ItemServiceTest {
         Assertions.assertEquals(2, targetItems.size());
     }
 
+    @Test
+    void shouldThrowException_whenUpdatingItemWithNullName() {
+        itemDtoIn.setName(null);
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> itemService.updateItem(id, itemDtoIn, id));
+    }
 
 
+    @Test
+    void shouldThrowException_whenUpdatingItemWithEmptyDescription() {
+        itemDtoIn.setDescription("");
 
+        Assertions.assertThrows(IllegalArgumentException.class, () -> itemService.updateItem(id, itemDtoIn, id));
+    }
 
+    @Test
+    void shouldThrowException_whenUserTriesToUpdateNonExistentItem() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(99L)).thenReturn(Optional.empty());
 
+        Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.updateItem(99L, itemDtoIn, id));
+    }
 
+    @Test
+    void shouldReturnEmptyList_whenOwnerHasNoItemsWithPaging() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findAllByOwnerId(anyLong(), any())).thenReturn(Collections.emptyList());
 
+        List<ItemDtoOut> targetItems = itemService.getItemsByOwner(0, 10, id);
 
+        Assertions.assertTrue(targetItems.isEmpty());
+    }
 
+    @Test
+    void shouldReturnItems_whenSearchTextMatchesMultipleItemsWithDifferentCases() {
+        when(itemRepository.search(any(), any())).thenReturn(List.of(item, anotherItem));
 
+        List<ItemDtoOut> targetItems = itemService.getItemBySearch(0, 10, "ITEM");
 
+        Assertions.assertEquals(2, targetItems.size());
+    }
+
+    @Test
+    void shouldThrowException_whenSavingCommentForNonExistentItem() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
+    }
+
+    @Test
+    void shouldThrowException_whenUserTriesToSaveCommentWithoutBooking() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(bookingRepository.existsByBookerIdAndItemIdAndEndBefore(anyLong(), anyLong(), any())).thenReturn(false);
+
+        Assertions.assertThrows(NotBookerException.class, () -> itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
+    }
+
+    @Test
+    void shouldUpdateItem_whenUserIsTheOwnerAndFieldsAreNull() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+
+        itemDtoIn.setDescription("New description");
+        itemDtoIn.setAvailable(null);
+
+        ItemDtoOut actualItemDto = itemService.updateItem(id, itemDtoIn, id);
+
+        Assertions.assertEquals(item.getName(), actualItemDto.getName());
+        Assertions.assertEquals(item.getDescription(), actualItemDto.getDescription());
+        Assertions.assertEquals(item.getAvailable(), actualItemDto.getAvailable());
+    }
+
+    @Test
+    void shouldReturnItem_whenItemIsAvailable() {
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(bookingRepository.findFirstByItemIdAndStartLessThanEqualAndStatus(anyLong(), any(), any(), any()))
+                .thenReturn(Optional.of(booking));
+        when(bookingRepository.findFirstByItemIdAndStartAfterAndStatus(anyLong(), any(), any(), any()))
+                .thenReturn(Optional.of(booking));
+        when(commentRepository.findAllByItemId(id)).thenReturn(List.of(comment));
+
+        ItemDtoOut actualItemDto = itemService.getItemById(id, id);
+
+        Assertions.assertTrue(actualItemDto.getAvailable());
+    }
+
+    @Test
+    void shouldReturnItem_whenItemIsNotAvailable() {
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(bookingRepository.findFirstByItemIdAndStartLessThanEqualAndStatus(anyLong(), any(), any(), any()))
+                .thenReturn(Optional.of(booking));
+        when(bookingRepository.findFirstByItemIdAndStartAfterAndStatus(anyLong(), any(), any(), any()))
+                .thenReturn(Optional.of(booking));
+        when(commentRepository.findAllByItemId(id)).thenReturn(List.of(comment));
+
+        item.setAvailable(false);
+
+        ItemDtoOut actualItemDto = itemService.getItemById(id, id);
+
+        Assertions.assertFalse(actualItemDto.getAvailable());
+    }
+
+    @Test
+    void shouldThrowException_whenUpdatingItemWithNullDescription() {
+        itemDtoIn.setDescription(null);
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> itemService.updateItem(id, itemDtoIn, id));
+    }
+
+    @Test
+    void shouldThrowException_whenUpdatingItemWithEmptyName() {
+        itemDtoIn.setName("");
+
+        Assertions.assertThrows(IllegalArgumentException.class, () -> itemService.updateItem(id, itemDtoIn, id));
+    }
+
+    @Test
+    void shouldReturnItems_whenSearchTextMatchesMultipleItemsWithDifferentCasesInsensitive() {
+        when(itemRepository.search(any(), any())).thenReturn(List.of(item, anotherItem));
+
+        List<ItemDtoOut> targetItems = itemService.getItemBySearch(0, 10, "ItEm");
+
+        Assertions.assertEquals(2, targetItems.size());
+    }
+
+    @Test
+    void shouldThrowException_whenSavingCommentForItemWithoutBooking() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(bookingRepository.existsByBookerIdAndItemIdAndEndBefore(anyLong(), anyLong(), any())).thenReturn(false);
+
+        Assertions.assertThrows(NotBookerException.class, () -> itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
+    }
+
+    @Test
+    void shouldThrowException_whenUserTriesToSaveCommentForNonExistentItem() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
+    }
 
 
 }

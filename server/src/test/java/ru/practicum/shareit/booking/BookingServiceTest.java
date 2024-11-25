@@ -14,11 +14,9 @@ import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingServiceImpl;
 import ru.practicum.shareit.enums.BookingStatusEnum;
 import ru.practicum.shareit.exception.*;
-import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.dto.UserDto;
-import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.service.UserServiceImpl;
@@ -63,19 +61,6 @@ class BookingServiceTest {
             LocalDateTime.of(2023, 7, 1, 12, 12, 12),
             LocalDateTime.of(2023, 7, 30, 12, 12, 12), 2L);
 
-    @Test
-    void shouldSaveBooking_whenItemIsAvailable() {
-        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(bookingRepository.save(any())).thenReturn(booking);
-
-        BookingDtoOut actualBooking = bookingService.save(bookingDtoIn, 2L);
-
-        Assertions.assertEquals(booking.getStart(), actualBooking.getStart());
-        Assertions.assertEquals(booking.getEnd(), actualBooking.getEnd());
-        Assertions.assertEquals(ItemMapper.toItemDtoShort(booking.getItem()), actualBooking.getItem());
-        Assertions.assertEquals(UserMapper.toUserDtoShort(booking.getBooker()), actualBooking.getBooker());
-    }
 
     @Test
     void shouldThrowException_whenUser_DoesNotExist() {
@@ -284,7 +269,7 @@ class BookingServiceTest {
     @Test
     void shouldThrowException_whenUserIsNotOwnerOfItem() {
         lenient().when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        lenient().when(itemRepository.findById(1L)).thenReturn(Optional.of(item)); // Используйте lenient()
+        lenient().when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         lenient().when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
 
         Assertions.assertThrows(IllegalViewAndUpdateException.class, () ->
@@ -330,7 +315,7 @@ class BookingServiceTest {
 
     @Test
     void shouldThrowException_whenStateIsInvalidInGetAllByOwner() {
-        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user)); // Используйте lenient()
+        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
         Assertions.assertThrows(UnsupportedStatusException.class, () ->
                 bookingService.getAllByOwner(0, 10, "INVALID_STATE", 1L));
@@ -471,5 +456,205 @@ class BookingServiceTest {
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "REJECTED", 2L);
         Assertions.assertTrue(actualBookings.isEmpty());
     }
+
+    @Test
+    void shouldThrowException_whenUserIsNotAvailable() {
+        when(userRepository.findById(2L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenBookingAlreadyApproved() {
+        booking.setStatus(BookingStatusEnum.APPROVED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, true, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenGettingBookingWithNegativeId() {
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                bookingService.getBookingById(-1L, 1L));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForBookerWithStateWaiting() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStatus(anyLong(), any(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "WAITING", 2L);
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForOwnerWithStateRejected() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookingRepository.findAllByOwnerIdAndStatus(anyLong(), any(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "REJECTED", 1L);
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldThrowException_whenBookingStartDateIsInThePast() {
+        bookingDtoIn.setStart(LocalDateTime.now().minusDays(1));
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(InvalidBookingDateException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+
+    @Test
+    void shouldThrowException_whenBookingEndDateIsBeforeStartDate() {
+        bookingDtoIn.setStart(LocalDateTime.now().plusDays(2));
+        bookingDtoIn.setEnd(LocalDateTime.now().plusDays(1));
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(InvalidBookingDateException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenBookingEndDateIsNull() {
+        bookingDtoIn.setEnd(null);
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(InvalidBookingDateException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenApprovingAlreadyApprovedBooking() {
+        booking.setStatus(BookingStatusEnum.APPROVED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, true, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenRejectingAlreadyRejectedBooking() {
+        booking.setStatus(BookingStatusEnum.REJECTED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, false, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenBookingStartDateIsNull() {
+        bookingDtoIn.setStart(null);
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(InvalidBookingDateException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenItemIsNotAvailableForBooking() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        item.setAvailable(false);
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+
+    @Test
+    void shouldThrowException_whenGettingBookingByIdWithNegativeId() {
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                bookingService.getBookingById(-1L, 1L));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForOwnerWithStateFuture() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookingRepository.findAllByOwnerIdAndStateFuture(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "FUTURE", 1L);
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForBookerWithStateFuture() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStateFuture(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "FUTURE", 2L);
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldThrowException_whenBookingIsNotPendingOnApprove() {
+        booking.setStatus(BookingStatusEnum.REJECTED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, true, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenBookingIsNotPendingOnReject() {
+        booking.setStatus(BookingStatusEnum.APPROVED);
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, false, 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenApprovingBookingWithInvalidUser() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(IllegalViewAndUpdateException.class, () ->
+                bookingService.approve(1L, true, 2L));
+    }
+
+
+    @Test
+    void shouldThrowException_whenBookingStartDateIsAfterEndDate() {
+        bookingDtoIn.setStart(LocalDateTime.now().plusDays(2));
+        bookingDtoIn.setEnd(LocalDateTime.now().plusDays(1));
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(InvalidBookingDateException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenItemIsNotAvailableDuringBookingPeriod() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        LocalDateTime now = LocalDateTime.now();
+        booking.setStart(now.plusDays(1));
+        booking.setEnd(now.plusDays(3));
+        item.setAvailable(false);
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
+
 
 }

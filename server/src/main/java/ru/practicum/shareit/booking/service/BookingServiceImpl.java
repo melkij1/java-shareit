@@ -20,6 +20,7 @@ import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -38,12 +39,29 @@ public class BookingServiceImpl implements BookingService {
     public BookingDtoOut save(BookingDtoIn bookingDtoIn, long userId) {
         User booker = getUser(userId);
         Item item = getItem(bookingDtoIn.getItemId());
+
+        if (bookingDtoIn.getStart() == null) {
+            throw new InvalidBookingDateException("Дата начала бронирования не может быть null.");
+        }
+
+        if (bookingDtoIn.getEnd() == null) {
+            throw new InvalidBookingDateException("Дата окончания бронирования не может быть null.");
+        }
+
         if (!item.getAvailable()) {
             throw new ItemIsNotAvailableException("Вещь недоступна для брони");
         }
         if (Long.valueOf(userId).equals(item.getOwner().getId())) {
             throw new NotAvailableToBookOwnItemsException("Функция бронировать собственную вещь отсутствует");
         }
+
+        if (bookingDtoIn.getStart().isBefore(LocalDateTime.now())) {
+            throw new InvalidBookingDateException("Дата начала бронирования не может быть в прошлом.");
+        }
+        if (bookingDtoIn.getEnd().isBefore(bookingDtoIn.getStart())) {
+            throw new InvalidBookingDateException("Дата окончания бронирования должна быть позже даты начала.");
+        }
+
 
         Booking booking = new Booking();
         booking.setItem(item);
