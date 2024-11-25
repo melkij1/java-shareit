@@ -149,7 +149,7 @@ class UserServiceTest {
 
     @Test
     void saveNewUser_whenUserDtoIsNull_thenThrowsIllegalArgumentException() {
-        assertThrows(IllegalArgumentException.class, () -> userService.saveNewUser (null));
+        assertThrows(IllegalArgumentException.class, () -> userService.saveNewUser(null));
     }
 
 
@@ -158,9 +158,9 @@ class UserServiceTest {
         UserDto userDtoWithBlankName = new UserDto(id, "   ", "newemail@example.com");
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
 
-        UserDto actualUser  = userService.updateUser (id, userDtoWithBlankName);
+        UserDto actualUser = userService.updateUser(id, userDtoWithBlankName);
 
-        assertEquals(user.getName(), actualUser .getName()); // Имя не должно измениться
+        assertEquals(user.getName(), actualUser.getName()); // Имя не должно измениться
         verify(userRepository, times(1)).findById(id);
     }
 
@@ -169,9 +169,9 @@ class UserServiceTest {
         UserDto userDtoWithBlankEmail = new UserDto(id, "New Name", "   ");
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
 
-        UserDto actualUser  = userService.updateUser (id, userDtoWithBlankEmail);
+        UserDto actualUser  = userService.updateUser(id, userDtoWithBlankEmail);
 
-        assertEquals(user.getEmail(), actualUser .getEmail()); // Email не должен измениться
+        assertEquals(user.getEmail(), actualUser.getEmail()); // Email не должен измениться
         verify(userRepository, times(1)).findById(id);
     }
 
@@ -181,7 +181,7 @@ class UserServiceTest {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(userRepository.findAll()).thenReturn(List.of(new User(id, "Existing User", "duplicate@example.com")));
 
-        assertThrows(NotUniqueEmailException.class, () -> userService.updateUser (id, userDtoWithDuplicateEmail));
+        assertThrows(NotUniqueEmailException.class, () -> userService.updateUser(id, userDtoWithDuplicateEmail));
     }
 
     @Test
