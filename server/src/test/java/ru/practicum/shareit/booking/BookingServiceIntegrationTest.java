@@ -25,13 +25,13 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 public class BookingServiceIntegrationTest {
 
     @Autowired
-    private BookingService bookingService; // Ваш сервис бронирования
+    private BookingService bookingService;
 
     @Autowired
-    private UserRepository  userRepository; // Репозиторий пользователей
+    private UserRepository  userRepository;
 
     @Autowired
-    private ItemRepository itemRepository; // Репозиторий предметов
+    private ItemRepository itemRepository;
 
     private User owner;
     private User booker;
@@ -40,7 +40,6 @@ public class BookingServiceIntegrationTest {
 
     @BeforeEach
     public void setUp() {
-        // Создаем и сохраняем владельца и бронирующего пользователя
         owner = new User();
         owner.setName("Owner");
         owner.setEmail("owner@example.com");
@@ -51,7 +50,6 @@ public class BookingServiceIntegrationTest {
         booker.setEmail("booker@example.com");
         userRepository.save(booker);
 
-        // Создаем доступный предмет
         availableItem = new Item();
         availableItem.setName("Available Item");
         availableItem.setDescription("This item is available for booking.");
@@ -59,7 +57,6 @@ public class BookingServiceIntegrationTest {
         availableItem.setAvailable(true);
         itemRepository.save(availableItem);
 
-        // Создаем недоступный предмет
         unavailableItem = new Item();
         unavailableItem.setName("Unavailable Item");
         unavailableItem.setDescription("This item is not available for booking.");
@@ -70,26 +67,20 @@ public class BookingServiceIntegrationTest {
 
     @Test
     public void testSaveBookingSuccessfully() {
-        // Создаем DTO для бронирования
         BookingDtoIn bookingDtoIn = new BookingDtoIn(LocalDateTime.now().plusDays(1), LocalDateTime.now().plusDays(2), availableItem.getId());
 
-        // Сохраняем бронирование
         BookingDtoOut savedBooking = bookingService.save(bookingDtoIn, booker.getId());
 
-        // Проверяем, что бронирование было успешно создано
         assertThat(savedBooking).isNotNull();
-        assertThat(savedBooking.getItem().getId()).isEqualTo(availableItem.getId()); // Проверяем идентификатор предмета
-        assertThat(savedBooking.getBooker().getId()).isEqualTo(booker.getId()); // Проверяем идентификатор бронирующего
+        assertThat(savedBooking.getItem().getId()).isEqualTo(availableItem.getId());
+        assertThat(savedBooking.getBooker().getId()).isEqualTo(booker.getId());
     }
 
 
     @Test
     public void testSaveBookingThrowsExceptionWhenItemNotAvailable() {
-        // Создаем DTO для бронирования недоступного предмета
         BookingDtoIn bookingDtoIn = new BookingDtoIn(LocalDateTime.now().plusDays(1),LocalDateTime.now().plusDays(2),unavailableItem.getId());
 
-
-        // Проверяем, что выбрасывается исключение
         assertThatThrownBy(() -> bookingService.save(bookingDtoIn, booker.getId()))
                 .isInstanceOf(ItemIsNotAvailableException.class)
                 .hasMessage("Вещь недоступна для брони");
@@ -97,11 +88,8 @@ public class BookingServiceIntegrationTest {
 
     @Test
     public void testSaveBookingThrowsExceptionWhenUserBooksOwnItem() {
-        // Создаем DTO для бронирования собственного предмета
         BookingDtoIn bookingDtoIn = new BookingDtoIn(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1),availableItem.getId());
-
-
-        // Проверяем, что выбрасывается исключение
+        
         assertThatThrownBy(() -> bookingService.save(bookingDtoIn, owner.getId()))
                 .isInstanceOf(NotAvailableToBookOwnItemsException.class)
                 .hasMessage("Функция бронировать собственную вещь отсутствует");
