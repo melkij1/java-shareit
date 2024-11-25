@@ -31,6 +31,9 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserDto saveNewUser(UserDto userDto) {
+        if (userDto == null) {
+            throw new IllegalArgumentException("User  Dto cannot be null");
+        }
         validateUniqueEmail(userDto);
         User user = userRepository.save(UserMapper.toEntity(userDto));
         return UserMapper.toUserDto(user);

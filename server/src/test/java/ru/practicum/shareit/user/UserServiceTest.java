@@ -146,4 +146,49 @@ class UserServiceTest {
 
         assertThrows(EntityNotFoundException.class, () -> userService.updateUser(id, userDto));
     }
+
+    @Test
+    void saveNewUser_whenUserDtoIsNull_thenThrowsIllegalArgumentException() {
+        assertThrows(IllegalArgumentException.class, () -> userService.saveNewUser (null));
+    }
+
+
+    @Test
+    void updateUser_whenUserNameIsBlank_thenUserNameNotUpdated() {
+        UserDto userDtoWithBlankName = new UserDto(id, "   ", "newemail@example.com");
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+        UserDto actualUser  = userService.updateUser (id, userDtoWithBlankName);
+
+        assertEquals(user.getName(), actualUser .getName()); // Имя не должно измениться
+        verify(userRepository, times(1)).findById(id);
+    }
+
+    @Test
+    void updateUser_whenUserEmailIsBlank_thenUserEmailNotUpdated() {
+        UserDto userDtoWithBlankEmail = new UserDto(id, "New Name", "   ");
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+
+        UserDto actualUser  = userService.updateUser (id, userDtoWithBlankEmail);
+
+        assertEquals(user.getEmail(), actualUser .getEmail()); // Email не должен измениться
+        verify(userRepository, times(1)).findById(id);
+    }
+
+    @Test
+    void updateUser_whenUserEmailIsNotUnique_thenThrowsNotUniqueEmailException() {
+        UserDto userDtoWithDuplicateEmail = new UserDto(id, "New Name", "duplicate@example.com");
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(userRepository.findAll()).thenReturn(List.of(new User(id, "Existing User", "duplicate@example.com")));
+
+        assertThrows(NotUniqueEmailException.class, () -> userService.updateUser (id, userDtoWithDuplicateEmail));
+    }
+
+    @Test
+    void deleteUserById_whenUserDoesNotExist_thenThrowsEntityNotFoundException() {
+        doThrow(new EntityNotFoundException("Пользователь не найден")).when(userRepository).deleteById(anyLong());
+
+        assertThrows(EntityNotFoundException.class, () -> userService.deleteUserById(2L));
+    }
+
 }
