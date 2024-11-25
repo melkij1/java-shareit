@@ -69,6 +69,7 @@ class ItemServiceTest {
             LocalDateTime.of(2023, 7, 1, 12, 12, 12));
     private final Booking booking = new Booking(id, null, null, item, user, BookingStatusEnum.WAITING);
     private final ItemRequest itemRequest = new ItemRequest();
+
     @Test
     void shouldSaveItem_whenUserExists() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
