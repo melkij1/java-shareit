@@ -15,9 +15,11 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 import ru.practicum.shareit.user.service.UserServiceImpl;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -39,7 +41,7 @@ class UserServiceTest {
         List<UserDto> targetUsers = userService.findAll();
 
         Assertions.assertNotNull(targetUsers);
-        Assertions.assertEquals(1, targetUsers.size());
+        assertEquals(1, targetUsers.size());
         verify(userRepository, times(1))
                 .findAll();
     }
@@ -50,14 +52,14 @@ class UserServiceTest {
 
         UserDto actualUser = userService.getUserById(id);
 
-        Assertions.assertEquals(UserMapper.toUserDto(user), actualUser);
+        assertEquals(UserMapper.toUserDto(user), actualUser);
     }
 
     @Test
     void getUserById_whenUserNotFound_thenExceptionThrown() {
         when((userRepository).findById(anyLong())).thenReturn(Optional.empty());
 
-        Assertions.assertThrows(EntityNotFoundException.class, () -> userService.getUserById(2L));
+        assertThrows(EntityNotFoundException.class, () -> userService.getUserById(2L));
     }
 
     @Test
@@ -66,14 +68,14 @@ class UserServiceTest {
 
         UserDto actualUser = userService.saveNewUser(userDto);
 
-        Assertions.assertEquals(userDto, actualUser);
+        assertEquals(userDto, actualUser);
     }
 
     @Test
     void saveNewUser_whenEmailNotUnique_thenThrowsNotUniqueEmailException() {
         when(userRepository.save(any())).thenThrow(new NotUniqueEmailException("Email already exists"));
 
-        Assertions.assertThrows(NotUniqueEmailException.class, () -> {
+        assertThrows(NotUniqueEmailException.class, () -> {
             userService.saveNewUser(userDto);
         });
     }
@@ -82,7 +84,7 @@ class UserServiceTest {
     void saveNewUser_whenUserEmailDuplicate_thenNotSavedUser() {
         doThrow(DataIntegrityViolationException.class).when(userRepository).save(any(User.class));
 
-        Assertions.assertThrows(DataIntegrityViolationException.class, () -> userService.saveNewUser(userDto));
+        assertThrows(DataIntegrityViolationException.class, () -> userService.saveNewUser(userDto));
     }
 
     @Test
@@ -91,7 +93,7 @@ class UserServiceTest {
 
         UserDto actualUser = userService.updateUser(id, userDto);
 
-        Assertions.assertEquals(UserMapper.toUserDto(user), actualUser);
+        assertEquals(UserMapper.toUserDto(user), actualUser);
         verify(userRepository, times(1))
                 .findById(user.getId());
     }
@@ -101,5 +103,29 @@ class UserServiceTest {
         userService.deleteUserById(1L);
         verify(userRepository, times(1))
                 .deleteById(1L);
+    }
+
+    @Test
+    public void testValidateUniqueEmail_EmailExists() {
+        when(userRepository.findAll()).thenReturn(List.of(new User(id, "Some User", "user@mail.ru")));
+
+        NotUniqueEmailException thrown = assertThrows(NotUniqueEmailException.class, () -> {
+            userService.saveNewUser(userDto);
+        });
+
+        assertEquals("Пользователь с email user@mail.ru уже существует", thrown.getMessage());
+    }
+
+    @Test
+    public void testValidateUniqueEmail_EmailDoesNotExist() {
+        UserDto uniqueUserDto = new UserDto(id, "Unique User", "unique@example.com");
+        when(userRepository.findAll()).thenReturn(new ArrayList<>());
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setId(1L);
+            return user;
+        });
+
+        assertDoesNotThrow(() -> userService.saveNewUser(uniqueUserDto));
     }
 }
