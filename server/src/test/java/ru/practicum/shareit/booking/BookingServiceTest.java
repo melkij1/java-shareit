@@ -22,6 +22,7 @@ import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -273,4 +274,65 @@ class BookingServiceTest {
 
         Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
+
+    @Test
+    void shouldThrowException_whenUserIsNotOwnerOfItem() {
+        lenient().when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        lenient().when(itemRepository.findById(1L)).thenReturn(Optional.of(item)); // Используйте lenient()
+        lenient().when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+
+        Assertions.assertThrows(IllegalViewAndUpdateException.class, () ->
+                bookingService.approve(1L, true, 2L));
+    }
+
+
+
+    @Test
+    void shouldThrowException_whenBookingDoesNotExistInGetById() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                bookingService.getBookingById(1L, 2L));
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForBooker() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "ALL", 2L);
+
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForOwner() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookingRepository.findAllByOwnerId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "ALL", 1L);
+
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldThrowException_whenStateIsInvalidInGetAllByBooker() {
+        Assertions.assertThrows(UnsupportedStatusException.class, () ->
+                bookingService.getAllByBooker(0, 10, "INVALID_STATE", 2L));
+    }
+
+
+    @Test
+    void shouldThrowException_whenStateIsInvalidInGetAllByOwner() {
+        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user)); // Используйте lenient()
+
+        Assertions.assertThrows(UnsupportedStatusException.class, () ->
+                bookingService.getAllByOwner(0, 10, "INVALID_STATE", 1L));
+    }
+
+
+
+
+
+
 }
