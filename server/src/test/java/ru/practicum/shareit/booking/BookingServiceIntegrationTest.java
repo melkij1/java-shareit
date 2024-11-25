@@ -89,7 +89,7 @@ public class BookingServiceIntegrationTest {
     @Test
     public void testSaveBookingThrowsExceptionWhenUserBooksOwnItem() {
         BookingDtoIn bookingDtoIn = new BookingDtoIn(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1),availableItem.getId());
-        
+
         assertThatThrownBy(() -> bookingService.save(bookingDtoIn, owner.getId()))
                 .isInstanceOf(NotAvailableToBookOwnItemsException.class)
                 .hasMessage("Функция бронировать собственную вещь отсутствует");

@@ -8,6 +8,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
 import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.exception.NotUniqueEmailException;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
@@ -66,6 +67,15 @@ class UserServiceTest {
         UserDto actualUser = userService.saveNewUser(userDto);
 
         Assertions.assertEquals(userDto, actualUser);
+    }
+
+    @Test
+    void saveNewUser_whenEmailNotUnique_thenThrowsNotUniqueEmailException() {
+        when(userRepository.save(any())).thenThrow(new NotUniqueEmailException("Email already exists"));
+
+        Assertions.assertThrows(NotUniqueEmailException.class, () -> {
+            userService.saveNewUser(userDto);
+        });
     }
 
     @Test
