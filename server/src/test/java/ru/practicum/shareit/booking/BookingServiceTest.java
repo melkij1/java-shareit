@@ -26,10 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class BookingServiceTest {
@@ -49,6 +48,7 @@ class BookingServiceTest {
     private final User user = new User(1L, "User", "user@mail.ru");
     private final UserDto owner = new UserDto(1L, "Owner", "owner@example.com");
     private final User booker = new User(2L, "user2", "user2@mail.ru");
+    private final UserDto bookerDto = new UserDto(2L, "user2", "user2@mail.ru");
     private final Item item = new Item(1L, "item", "cool", true, user, null);
     private final Booking booking = new Booking(1L,
             LocalDateTime.of(2023, 7, 1, 12, 12, 12),
@@ -115,7 +115,7 @@ class BookingServiceTest {
 
         BookingDtoOut actualBooking = bookingService.approve(1L, true, 1L);
 
-        Assertions.assertEquals(BookingStatusEnum.APPROVED, actualBooking.getStatus());
+        assertEquals(BookingStatusEnum.APPROVED, actualBooking.getStatus());
     }
 
 
@@ -146,7 +146,7 @@ class BookingServiceTest {
 
         BookingDtoOut actualBooking = bookingService.getBookingById(1L, 1L);
 
-        Assertions.assertEquals(BookingMapper.toBookingDtoOut(booking), actualBooking);
+        assertEquals(BookingMapper.toBookingDtoOut(booking), actualBooking);
     }
 
     @Test
@@ -166,7 +166,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "ALL", 2L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -176,7 +176,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "CURRENT", 2L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -186,7 +186,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "PAST", 2L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -196,7 +196,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "FUTURE", 2L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -206,7 +206,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "WAITING", 2L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -222,7 +222,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "ALL", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
 
     }
 
@@ -233,7 +233,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "CURRENT", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -243,7 +243,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "PAST", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -253,7 +253,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "FUTURE", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -263,7 +263,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "WAITING", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -330,7 +330,7 @@ class BookingServiceTest {
 
         BookingDtoOut actualBooking = bookingService.approve(1L, false, 1L);
 
-        Assertions.assertEquals(BookingStatusEnum.REJECTED, actualBooking.getStatus());
+        assertEquals(BookingStatusEnum.REJECTED, actualBooking.getStatus());
     }
 
 
@@ -427,7 +427,7 @@ class BookingServiceTest {
 
         List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "REJECTED", 1L);
 
-        Assertions.assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
+        assertEquals(List.of(BookingMapper.toBookingDtoOut(booking)), actualBookings);
     }
 
     @Test
@@ -656,5 +656,11 @@ class BookingServiceTest {
                 bookingService.save(bookingDtoIn, 2L));
     }
 
-
+    @Test
+    void testGetAllByBooker_UnsupportedState() {
+        Exception exception = assertThrows(UnsupportedStatusException.class, () -> {
+            bookingService.getAllByBooker(0, 10, "UNSUPPORTED_STATE", booker.getId());
+        });
+        assertEquals("Unknown state: UNSUPPORTED_STATUS", exception.getMessage());
+    }
 }

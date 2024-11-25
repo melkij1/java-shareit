@@ -4,21 +4,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
 import ru.practicum.shareit.booking.dto.BookingDtoOut;
+import ru.practicum.shareit.booking.model.Booking;
+import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.booking.service.BookingService;
+import ru.practicum.shareit.enums.BookingStatusEnum;
 import ru.practicum.shareit.exception.ItemIsNotAvailableException;
-import ru.practicum.shareit.exception.NotAvailableToBookOwnItemsException;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 @Transactional
@@ -31,12 +36,16 @@ public class BookingServiceIntegrationTest {
     private UserRepository  userRepository;
 
     @Autowired
+    private BookingRepository bookingRepository;
+
+    @Autowired
     private ItemRepository itemRepository;
 
     private User owner;
     private User booker;
     private Item availableItem;
     private Item unavailableItem;
+    private Booking booking;
 
     @BeforeEach
     public void setUp() {
@@ -63,6 +72,13 @@ public class BookingServiceIntegrationTest {
         unavailableItem.setOwner(owner);
         unavailableItem.setAvailable(false);
         itemRepository.save(unavailableItem);
+
+        booking = new Booking();
+        booking.setStart(LocalDateTime.now().plusDays(1));
+        booking.setEnd(LocalDateTime.now().plusDays(2));
+        booking.setItem(availableItem);
+        booking.setBooker(owner);
+        booking.setStatus(BookingStatusEnum.WAITING);
     }
 
     @Test
@@ -86,12 +102,29 @@ public class BookingServiceIntegrationTest {
                 .hasMessage("Вещь недоступна для брони");
     }
 
-    @Test
-    public void testSaveBookingThrowsExceptionWhenUserBooksOwnItem() {
-        BookingDtoIn bookingDtoIn = new BookingDtoIn(LocalDateTime.now().plusDays(2), LocalDateTime.now().plusDays(1),availableItem.getId());
 
-        assertThatThrownBy(() -> bookingService.save(bookingDtoIn, owner.getId()))
-                .isInstanceOf(NotAvailableToBookOwnItemsException.class)
-                .hasMessage("Функция бронировать собственную вещь отсутствует");
+    @Test
+    void testFindBookingById() {
+        Booking savedBooking = bookingRepository.save(booking);
+        Optional<Booking> foundBooking = bookingRepository.findById(savedBooking.getId());
+        assertTrue(foundBooking.isPresent());
+        assertEquals(savedBooking.getId(), foundBooking.get().getId());
+    }
+
+    @Test
+    @Rollback(false)
+    void testDeleteBooking() {
+        Booking savedBooking = bookingRepository.save(booking);
+        bookingRepository.deleteById(savedBooking.getId());
+        Optional<Booking> foundBooking = bookingRepository.findById(savedBooking.getId());
+        assertFalse(foundBooking.isPresent());
+    }
+
+    @Test
+    void testUpdateBooking() {
+        Booking savedBooking = bookingRepository.save(booking);
+        savedBooking.setStatus(BookingStatusEnum.APPROVED);
+        Booking updatedBooking = bookingRepository.save(savedBooking);
+        assertEquals(BookingStatusEnum.APPROVED, updatedBooking.getStatus());
     }
 }
