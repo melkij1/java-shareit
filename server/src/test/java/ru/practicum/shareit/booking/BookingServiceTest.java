@@ -17,9 +17,11 @@ import ru.practicum.shareit.exception.*;
 import ru.practicum.shareit.item.mapper.ItemMapper;
 import ru.practicum.shareit.item.model.Item;
 import ru.practicum.shareit.item.repository.ItemRepository;
+import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.mapper.UserMapper;
 import ru.practicum.shareit.user.model.User;
 import ru.practicum.shareit.user.repository.UserRepository;
+import ru.practicum.shareit.user.service.UserServiceImpl;
 
 import java.time.LocalDateTime;
 import java.util.Collections;
@@ -43,7 +45,11 @@ class BookingServiceTest {
     @InjectMocks
     private BookingServiceImpl bookingService;
 
+    @InjectMocks
+    private UserServiceImpl userService;
+
     private final User user = new User(1L, "User", "user@mail.ru");
+    private final UserDto owner = new UserDto(1L, "Owner", "owner@example.com");
     private final User booker = new User(2L, "user2", "user2@mail.ru");
     private final Item item = new Item(1L, "item", "cool", true, user, null);
     private final Booking booking = new Booking(1L,
@@ -399,31 +405,27 @@ class BookingServiceTest {
 
     @Test
     void shouldThrowException_whenApprovingBookingByNonOwner() {
-        // Arrange
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(userRepository.findById(2L)).thenReturn(Optional.of(booker)); // Non-owner user
 
-        // Act & Assert
         Assertions.assertThrows(IllegalViewAndUpdateException.class, () ->
                 bookingService.approve(1L, true, 2L));
     }
 
     @Test
     void shouldThrowException_whenBookingIsNotPending() {
-        // Arrange
-        booking.setStatus(BookingStatusEnum.APPROVED); // Set booking status to APPROVED
+        booking.setStatus(BookingStatusEnum.APPROVED);
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
-        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
-        when(userRepository.findById(1L)).thenReturn(Optional.of(user)); // Owner user
+        lenient().when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
-        // Act & Assert
         Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
                 bookingService.approve(1L, true, 1L));
     }
 
+
     @Test
-    void shouldThrowException_whenGettingBookingWithInvalidUser () {
+    void shouldThrowException_whenGettingBookingWithInvalidUser() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(userRepository.findById(1L)).thenReturn(Optional.of(new User(1L, "Valid User", "valid@example.com"))); // Valid user
         lenient().when(userRepository.findById(3L)).thenReturn(Optional.of(new User(3L, "Another User", "another@example.com")));
