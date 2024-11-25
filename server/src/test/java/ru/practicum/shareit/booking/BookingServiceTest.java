@@ -89,7 +89,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenItemIsNotAvailable() {
+    void shouldThrowExceptionItems_whenIsNotAvailable() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         item.setAvailable(false);
@@ -331,8 +331,69 @@ class BookingServiceTest {
     }
 
 
+    @Test
+    void shouldRejectBooking_whenConditionsAreMet() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        BookingDtoOut actualBooking = bookingService.approve(1L, false, 1L);
+
+        Assertions.assertEquals(BookingStatusEnum.REJECTED, actualBooking.getStatus());
+    }
 
 
+    @Test
+    void shouldThrowException_whenGettingBookingWithInvalidId() {
+        when(bookingRepository.findById(2L)).thenReturn(Optional.empty());
+
+        Assertions.assertThrows(EntityNotFoundException.class, () ->
+                bookingService.getBookingById(2L, 1L));
+    }
 
 
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForOwnerInGetAllByOwner() {
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(bookingRepository.findAllByOwnerId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByOwner(0, 10, "ALL", 1L);
+
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+
+    @Test
+    void shouldReturnEmptyList_whenNoBookingsForBookerInGetAllByBooker() {
+        when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerId(anyLong(), any())).thenReturn(Collections.emptyList());
+
+        List<BookingDtoOut> actualBookings = bookingService.getAllByBooker(0, 10, "ALL", 2L);
+
+        Assertions.assertTrue(actualBookings.isEmpty());
+    }
+
+    @Test
+    void shouldThrowException_whenGettingAllBookingsForBookerWithInvalidState() {
+        Assertions.assertThrows(UnsupportedStatusException.class, () ->
+                bookingService.getAllByBooker(0, 10, "INVALID_STATE", 2L));
+    }
+
+    @Test
+    void shouldThrowException_whenGettingAllBookingsForOwnerWithInvalidState() {
+        Assertions.assertThrows(UnsupportedStatusException.class, () ->
+                bookingService.getAllByOwner(0, 10, "INVALID_STATE", 1L));
+    }
+
+    @Test
+    void shouldThrowException_whenItemIsNotAvailable() {
+        User user = new User(2L, "Test User", "test@example.com");
+        when(userRepository.findById(2L)).thenReturn(Optional.of(user));
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        item.setAvailable(false);
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.save(bookingDtoIn, 2L));
+    }
 }
