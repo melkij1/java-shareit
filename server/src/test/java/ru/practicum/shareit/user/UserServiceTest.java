@@ -34,6 +34,17 @@ class UserServiceTest {
     private final UserDto userDto = new UserDto(id, "User", "user@mail.ru");
     private final User user = new User(id, "User", "user@mail.ru");
 
+
+    @Test
+    void findAll_whenNoUsers_thenReturnsEmptyList() {
+        when(userRepository.findAll()).thenReturn(new ArrayList<>());
+
+        List<UserDto> result = userService.findAll();
+
+        assertTrue(result.isEmpty());
+    }
+
+
     @Test
     void getAllUsers() {
         when(userRepository.findAll()).thenReturn(List.of(user));
@@ -127,5 +138,12 @@ class UserServiceTest {
         });
 
         assertDoesNotThrow(() -> userService.saveNewUser(uniqueUserDto));
+    }
+
+    @Test
+    void updateUser_whenUserNotFound_thenThrowsException() {
+        when(userRepository.findById(anyLong())).thenReturn(Optional.empty());
+
+        assertThrows(EntityNotFoundException.class, () -> userService.updateUser(id, userDto));
     }
 }
