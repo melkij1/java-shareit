@@ -27,6 +27,7 @@ import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,7 +57,7 @@ class BookingServiceTest {
             LocalDateTime.of(2023, 7, 30, 12, 12, 12), 2L);
 
     @Test
-    void shouldReturnSavedBooking_whenItemIsAvailable() {
+    void shouldSaveBooking_whenItemIsAvailable() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
         when(bookingRepository.save(any())).thenReturn(booking);
@@ -70,7 +71,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenUser() {
+    void shouldThrowException_whenUser_DoesNotExist() {
         when((userRepository).findById(3L)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(EntityNotFoundException.class, () ->
@@ -78,7 +79,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenItemNotFound() {
+    void shouldThrowException_whenItemDoesNotExist() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(booker));
         when((itemRepository).findById(2L)).thenReturn(Optional.empty());
 
@@ -97,7 +98,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenBookerIsItemOwner() {
+    void shouldThrowException_whenBookerIsOwnerOfItem() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
@@ -106,7 +107,7 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenOwnerIsBooker() {
+    void shouldThrowException_whenOwnerAttemptsToBookOwnItem() {
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
         when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
 
@@ -115,7 +116,19 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenBookingNotFoundOnApprove() {
+    void shouldApproveBooking_whenConditionsAreMet() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+        lenient().when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        BookingDtoOut actualBooking = bookingService.approve(1L, true, 1L);
+
+        Assertions.assertEquals(BookingStatusEnum.APPROVED, actualBooking.getStatus());
+    }
+
+
+    @Test
+    void shouldThrowException_whenBookingDoesNotExist() {
         when((bookingRepository).findById(2L)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(EntityNotFoundException.class, () ->
@@ -123,7 +136,19 @@ class BookingServiceTest {
     }
 
     @Test
-    void shouldReturnBooking_whenUser() {
+    void shouldThrowException_whenItemIsAlreadyBooked() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        booking.setStatus(BookingStatusEnum.APPROVED);
+
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(item));
+
+        Assertions.assertThrows(ItemIsNotAvailableException.class, () ->
+                bookingService.approve(1L, true, 1L));
+    }
+
+
+    @Test
+    void shouldReturnBooking_whenUser_IsOwner() {
         when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
         when(userRepository.findById(1L)).thenReturn(Optional.of(user));
 
@@ -131,6 +156,16 @@ class BookingServiceTest {
 
         Assertions.assertEquals(BookingMapper.toBookingDtoOut(booking), actualBooking);
     }
+
+    @Test
+    void shouldThrowException_whenUserIsNeitherAuthorNorOwner() {
+        when(bookingRepository.findById(1L)).thenReturn(Optional.of(booking));
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+
+        Assertions.assertThrows(IllegalViewAndUpdateException.class, () ->
+                bookingService.getBookingById(1L, 3L));
+    }
+
 
     @Test
     void shouldReturnAllBookings_whenStateIsAll() {

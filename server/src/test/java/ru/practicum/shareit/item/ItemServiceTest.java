@@ -12,6 +12,7 @@ import ru.practicum.shareit.booking.model.Booking;
 import ru.practicum.shareit.booking.repository.BookingRepository;
 import ru.practicum.shareit.enums.BookingStatusEnum;
 import ru.practicum.shareit.exception.EntityNotFoundException;
+import ru.practicum.shareit.exception.NotBookerException;
 import ru.practicum.shareit.exception.NotOwnerException;
 import ru.practicum.shareit.item.comment.Comment;
 import ru.practicum.shareit.item.comment.CommentRepository;
@@ -63,7 +64,7 @@ class ItemServiceTest {
     private final Booking booking = new Booking(id, null, null, item, user, BookingStatusEnum.WAITING);
 
     @Test
-    void shouldReturnSavedItem_whenUser() {
+    void shouldSaveItem_whenUserExists() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(itemRepository.save(any())).thenReturn(item);
 
@@ -74,14 +75,14 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenUser() {
+    void shouldNotSaveItem_whenUserDoesNotExist() {
         when((userRepository).findById(2L)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.saveNewItem(itemDtoIn, 2L));
     }
 
     @Test
-    void shouldThrowException_whenItemNameIsMissing() {
+    void shouldNotSaveItem_whenItemNameIsMissing() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         doThrow(DataIntegrityViolationException.class).when(itemRepository).save(any(Item.class));
 
@@ -89,7 +90,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldReturnUpdatedItem_whenUser() {
+    void shouldUpdateItem_whenUserIsTheOwner() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(itemRepository.findById(id)).thenReturn(Optional.of(item));
 
@@ -99,7 +100,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenUserIsNotOwner() {
+    void shouldNotUpdateItem_whenUserIsNotTheOwner() {
         when(userRepository.findById(2L)).thenReturn(Optional.of(notOwner));
         when(itemRepository.findById(id)).thenReturn(Optional.of(item));
 
@@ -107,7 +108,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldReturnItemById_whenItemIsFound() {
+    void shouldReturnItem_whenItemExists() {
         when(bookingRepository.findFirstByItemIdAndStartLessThanEqualAndStatus(anyLong(), any(), any(), any()))
                 .thenReturn(Optional.of(booking));
         when(bookingRepository.findFirstByItemIdAndStartAfterAndStatus(anyLong(), any(), any(), any()))
@@ -125,14 +126,14 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldThrowException_whenItemIsNotFound() {
+    void shouldThrowException_whenItemDoesNotExist() {
         when((itemRepository).findById(2L)).thenReturn(Optional.empty());
 
         Assertions.assertThrows(EntityNotFoundException.class, () -> itemService.getItemById(2L, id));
     }
 
     @Test
-    void getItemsByOwner_CorrectArgumentsForPaging_thenReturnItems() {
+    void shouldReturnItems_whenOwnerRequestsWithPaging() {
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
         when(itemRepository.findAllByOwnerId(anyLong(), any())).thenReturn(List.of(item));
 
@@ -145,7 +146,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldReturnItemsByOwner_whenPagingParametersAreCorrect() {
+    void shouldReturnItems_whenSearchTextIsProvided() {
         when(itemRepository.search(any(), any())).thenReturn(List.of(item));
 
         List<ItemDtoOut> targetItems = itemService.getItemBySearch(0, 10, "abc");
@@ -157,7 +158,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldReturnItems_whenSearchTextIsNotBlank() {
+    void shouldReturnEmptyList_whenSearchTextIsBlank() {
         List<ItemDtoOut> targetItems = itemService.getItemBySearch(0, 10, "");
 
         Assertions.assertTrue(targetItems.isEmpty());
@@ -166,7 +167,7 @@ class ItemServiceTest {
     }
 
     @Test
-    void shouldReturnEmptyList_whenSearchTextIsBlank() {
+    void shouldSaveComment_whenUserIsBooker() {
         when(bookingRepository.existsByBookerIdAndItemIdAndEndBefore(anyLong(), anyLong(), any()))
                 .thenReturn(true);
         when(userRepository.findById(id)).thenReturn(Optional.of(user));
@@ -177,5 +178,17 @@ class ItemServiceTest {
 
         Assertions.assertEquals(commentDto, actualComment);
     }
+
+    @Test
+    void shouldThrowException_whenUserIsNotBooker() {
+        when(userRepository.findById(id)).thenReturn(Optional.of(user));
+        when(itemRepository.findById(id)).thenReturn(Optional.of(item));
+        when(bookingRepository.existsByBookerIdAndItemIdAndEndBefore(anyLong(), anyLong(), any())).thenReturn(false);
+
+        Assertions.assertThrows(NotBookerException.class, () ->
+                itemService.saveNewComment(id, new CommentDtoIn("abc"), id));
+    }
+
+
 
 }
