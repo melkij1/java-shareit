@@ -24,14 +24,14 @@ services:
       - SPRING_DATASOURCE_PASSWORD=root
 
   db:
-    image: postgres:16.1
-    container_name: postgres
+    image: postgres:13.7-alpine
+    container_name: db
     ports:
-      - "6541:5432"
+      - "5432:5432"
     environment:
-      - POSTGRES_PASSWORD=root
-      - POSTGRES_USER=root
       - POSTGRES_DB=shareit
+      - POSTGRES_USER=root
+      - POSTGRES_PASSWORD=root
     healthcheck:
       test: pg_isready -q -d $$POSTGRES_DB -U $$POSTGRES_USER
       timeout: 5s
