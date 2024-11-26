@@ -1,5 +1,6 @@
 package ru.practicum.shareit.booking;
 
+import lombok.RequiredArgsConstructor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +26,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest
+
 @Transactional
+@RequiredArgsConstructor(onConstructor_ = @Autowired)
+@SpringBootTest(
+        properties = "spring.datasource.username=test",
+        webEnvironment = SpringBootTest.WebEnvironment.NONE)
 public class BookingServiceIntegrationTest {
 
     @Autowired
