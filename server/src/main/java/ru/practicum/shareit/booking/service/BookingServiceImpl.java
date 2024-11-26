@@ -24,8 +24,6 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static org.springframework.data.domain.Sort.Direction.DESC;
-
 @Slf4j
 @Transactional
 @Service
@@ -167,87 +165,6 @@ public class BookingServiceImpl implements BookingService {
                 break;
             case REJECTED:
                 bookings = bookingRepository.findAllByOwnerIdAndStatus(ownerId, BookingStatusEnum.REJECTED, pageable);
-                break;
-            default:
-                throw new UnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
-        }
-        return bookings.stream().map(BookingMapper::toBookingDtoOut).collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<BookingDtoOut> getAllByBooker(String state, long bookerId) {
-        User booker = getUser(bookerId);
-        List<Booking> bookings;
-        BookingStateEnum bookingState;
-        try {
-            bookingState = BookingStateEnum.valueOf(state);
-        } catch (IllegalArgumentException e) {
-            throw new UnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
-        }
-        switch (bookingState) {
-            case ALL:
-                bookings = bookingRepository.findAllByBookerId(booker.getId(), (Pageable) Sort.by(DESC, "start"));
-                break;
-            case CURRENT:
-                bookings = bookingRepository.findAllByBookerIdAndStateCurrent(booker.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case PAST:
-                bookings = bookingRepository.findAllByBookerIdAndStatePast(booker.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case FUTURE:
-                bookings = bookingRepository.findAllByBookerIdAndStateFuture(booker.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case WAITING:
-                bookings = bookingRepository.findAllByBookerIdAndStatus(booker.getId(),
-                        BookingStatusEnum.WAITING, (Pageable) Sort.by(DESC, "start"));
-                break;
-            case REJECTED:
-                bookings = bookingRepository.findAllByBookerIdAndStatus(booker.getId(),
-                        BookingStatusEnum.REJECTED, (Pageable) Sort.by(DESC, "end"));
-                break;
-            default:
-                throw new UnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
-        }
-        return bookings.stream().map(BookingMapper::toBookingDtoOut).collect(Collectors.toList());
-    }
-
-    @Transactional(readOnly = true)
-    public List<BookingDtoOut> getAllByOwner(long ownerId, String state) {
-        User owner = getUser(ownerId);
-        List<Booking> bookings;
-        BookingStateEnum bookingState;
-        try {
-            bookingState = BookingStateEnum.valueOf(state);
-        } catch (IllegalArgumentException e) {
-            throw new UnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");
-        }
-        switch (bookingState) {
-            case ALL:
-                bookings = bookingRepository.findAllByOwnerId(owner.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case CURRENT:
-                bookings = bookingRepository.findAllByOwnerIdAndStateCurrent(owner.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case PAST:
-                bookings = bookingRepository.findAllByOwnerIdAndStatePast(owner.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case FUTURE:
-                bookings = bookingRepository.findAllByOwnerIdAndStateFuture(owner.getId(),
-                        (Pageable) Sort.by(DESC, "start"));
-                break;
-            case WAITING:
-                bookings = bookingRepository.findAllByOwnerIdAndStatus(owner.getId(),
-                        BookingStatusEnum.WAITING, (Pageable) Sort.by(DESC, "start"));
-                break;
-            case REJECTED:
-                bookings = bookingRepository.findAllByOwnerIdAndStatus(owner.getId(),
-                        BookingStatusEnum.REJECTED, (Pageable) Sort.by(DESC, "start"));
                 break;
             default:
                 throw new UnsupportedStatusException("Unknown state: UNSUPPORTED_STATUS");

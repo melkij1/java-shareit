@@ -8,16 +8,19 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import ru.practicum.shareit.exception.EntityNotFoundException;
 import ru.practicum.shareit.user.controller.UserController;
 import ru.practicum.shareit.user.dto.UserDto;
 import ru.practicum.shareit.user.service.UserService;
 
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -92,4 +95,42 @@ class UserControllerTest {
         Mockito.verify(userService, Mockito.times(1))
                 .deleteUserById(anyLong());
     }
+
+    @Test
+    void getUserById_NotFound() throws Exception {
+        when(userService.getUserById(anyLong())).thenThrow(new EntityNotFoundException("User  not found"));
+
+        mvc.perform(get("/users/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void updateUser_NotFound() throws Exception {
+        when(userService.updateUser(anyLong(), any())).thenThrow(new EntityNotFoundException("User  not found"));
+
+        mvc.perform(patch("/users/999")
+                        .content(mapper.writeValueAsString(userDto))
+                        .characterEncoding(StandardCharsets.UTF_8)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void deleteUser_NotFound() throws Exception {
+        doThrow(new EntityNotFoundException("User  not found")).when(userService).deleteUserById(anyLong());
+
+        mvc.perform(delete("/users/999"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void getAllUsers_EmptyList() throws Exception {
+        when(userService.findAll()).thenReturn(Collections.emptyList());
+
+        mvc.perform(get("/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(0)));
+    }
+
 }

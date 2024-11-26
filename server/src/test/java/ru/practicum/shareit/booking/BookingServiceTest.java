@@ -6,6 +6,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import ru.practicum.shareit.booking.dto.BookingDtoIn;
 import ru.practicum.shareit.booking.dto.BookingDtoOut;
 import ru.practicum.shareit.booking.dto.BookingMapper;
@@ -60,7 +62,7 @@ class BookingServiceTest {
     private final BookingDtoIn bookingDtoWrongItem = new BookingDtoIn(
             LocalDateTime.of(2023, 7, 1, 12, 12, 12),
             LocalDateTime.of(2023, 7, 30, 12, 12, 12), 2L);
-
+    private long bookerId = 1L;
 
     @Test
     void shouldThrowException_whenUser_DoesNotExist() {
@@ -662,5 +664,111 @@ class BookingServiceTest {
             bookingService.getAllByBooker(0, 10, "UNSUPPORTED_STATE", booker.getId());
         });
         assertEquals("Unknown state: UNSUPPORTED_STATUS", exception.getMessage());
+    }
+
+    @Test
+    void getAllByBooker_UnsupportedStatus() {
+        String state = "UNSUPPORTED_STATUS";
+        Exception exception = assertThrows(UnsupportedStatusException.class, () -> {
+            bookingService.getAllByBooker(0, 10, state, bookerId);
+        });
+        assertEquals("Unknown state: UNSUPPORTED_STATUS", exception.getMessage());
+    }
+
+    @Test
+    void getAllByBooker_All() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerId(booker.getId(), PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "ALL", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getAllByBooker_Current() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStateCurrent(booker.getId(), PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "CURRENT", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getAllByBooker_Past() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStatePast(booker.getId(), PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "PAST", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getAllByBooker_Future() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStateFuture(booker.getId(), PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "FUTURE", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getAllByBooker_Waiting() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStatus(booker.getId(), BookingStatusEnum.WAITING, PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "WAITING", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
+    }
+
+    @Test
+    void getAllByBooker_Rejected() {
+        userRepository.save(booker);
+        itemRepository.save(item);
+        bookingRepository.save(booking);
+
+        when(userRepository.findById(booker.getId())).thenReturn(Optional.of(booker));
+        when(bookingRepository.findAllByBookerIdAndStatus(booker.getId(), BookingStatusEnum.REJECTED, PageRequest.of(0, 10, Sort.by("start").descending())))
+                .thenReturn(List.of(booking));
+
+        List<BookingDtoOut> result = bookingService.getAllByBooker(0, 10, "REJECTED", booker.getId());
+
+        assertNotNull(result);
+        assertEquals(1, result.size());
     }
 }
