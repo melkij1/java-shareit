@@ -99,12 +99,12 @@ public class ItemServiceImpl implements ItemService {
         return ItemMapper.toDto(item);
     }
 
-    @Override
     @Transactional(readOnly = true)
+    @Override
     public ItemDtoOut getItemById(long itemId, long userId) {
         log.info("Получение вещи по идентификатору {}", itemId);
-        final Item item = getItem(itemId);
-        return addBookingsAndComments(item, userId);
+        return itemRepository.findById(itemId).map(item -> addBookingsAndComments(item, userId)).orElseThrow(() ->
+                new EntityNotFoundException(String.format("Объект класса %s не найден", Item.class)));
     }
 
     @Transactional(readOnly = true)
@@ -129,11 +129,12 @@ public class ItemServiceImpl implements ItemService {
 
     @Override
     public CommentDtoOut saveNewComment(long itemId, CommentDtoIn commentDtoIn, long userId) {
-        if (!bookingRepository.existsByBookerIdAndItemIdAndEndBefore(userId, itemId, LocalDateTime.now())) {
+        User user = getUser(userId);
+        Item item = itemRepository.findById(itemId).orElseThrow(() ->
+                new EntityNotFoundException(String.format("Объект класса %s не найден", Item.class)));
+        if (!bookingRepository.existsByBookerIdAndItemIdAndEndBefore(user.getId(), item.getId(), LocalDateTime.now())) {
             throw new NotBookerException("Пользователь не пользовался вещью");
         }
-        User user = getUser(userId);
-        Item item = getItem(itemId);
         Comment comment = commentRepository.save(CommentMapper.toComment(commentDtoIn, item, user));
         return CommentMapper.toCommentDtoOut(comment);
     }
