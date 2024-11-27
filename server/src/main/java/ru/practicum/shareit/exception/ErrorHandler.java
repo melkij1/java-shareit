@@ -17,13 +17,13 @@ public class ErrorHandler {
             NotBookerException.class, UnsupportedStatusException.class})
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ErrorResponse validateException(RuntimeException e) {
-        log.info(e.getMessage());
+        log.error(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     public ResponseEntity<String> validationException(final ConstraintViolationException e) {
-        log.debug(e.getMessage());
+        log.error(e.getMessage());
         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
     }
 
@@ -31,21 +31,21 @@ public class ErrorHandler {
             NotAvailableToBookOwnItemsException.class})
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public ErrorResponse entityNotFoundException(final EntityNotFoundException e) {
-        log.info(e.getMessage());
+        log.error(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.CONFLICT)
     public ErrorResponse userNotUniqueEmailException(final NotUniqueEmailException e) {
-        log.info(e.getMessage());
+        log.error(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 
     @ExceptionHandler
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ErrorResponse notOwnerException(final NotOwnerException e) {
-        log.info(e.getMessage());
+        log.error(e.getMessage());
         return new ErrorResponse(e.getMessage());
     }
 

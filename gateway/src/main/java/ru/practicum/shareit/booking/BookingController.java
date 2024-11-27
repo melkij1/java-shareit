@@ -27,10 +27,6 @@ public class BookingController {
     public ResponseEntity<Object> saveNewBooking(@Validated(Create.class) @RequestBody BookingDto bookingDto,
                                                  @RequestHeader("X-Sharer-User-Id") long userId) {
         log.info("POST / bookings");
-        if (!bookingDto.getEnd().isAfter(bookingDto.getStart()) ||
-                bookingDto.getStart().isBefore(LocalDateTime.now())) {
-            throw new WrongDatesException("Дата начала бронирования должна быть раньше даты возврата");
-        }
         return bookingClient.saveBooking(bookingDto, userId);
     }
 

@@ -10,7 +10,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.util.DefaultUriBuilderFactory;
+import ru.practicum.shareit.exception.WrongDatesException;
 
+import java.time.LocalDateTime;
 import java.util.Map;
 
 
@@ -30,6 +32,10 @@ public class BookingClient extends BaseClient {
     }
 
     public ResponseEntity<Object> saveBooking(BookingDto bookingDto, long userId) {
+        if (!bookingDto.getEnd().isAfter(bookingDto.getStart()) ||
+                bookingDto.getStart().isBefore(LocalDateTime.now())) {
+            throw new WrongDatesException("Дата начала бронирования должна быть раньше даты возврата");
+        }
         return post("", userId, bookingDto);
     }
 
